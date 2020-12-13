@@ -2,6 +2,7 @@
 #include <iostream>
 #include <mpi.h>
 #include <string>
+#include <chrono>
 #include <time.h>
 
 #define MASTER 0
@@ -179,7 +180,7 @@ void parallel_matrix_multiplication_1(double** A, double** B, int dim, int argc,
             }
         }
 
-        print_matrix(C, dim, dim, "Output");
+        //print_matrix(C, dim, dim, "Output");
     }
     else 
     {
@@ -289,7 +290,7 @@ void parallel_matrix_multiplication_2(double** A, double** B, int dim, int argc,
             free(C_part);
         }
 
-        print_matrix(C, dim, dim, "Output");
+        //print_matrix(C, dim, dim, "Output");
     }
     else 
     {
@@ -330,11 +331,49 @@ void parallel_matrix_multiplication_2(double** A, double** B, int dim, int argc,
 }
 
 
+void box(string name, unsigned int time) {
+	cout << name << endl;
+	cout << "Runtime: " << time << endl;
+	cout << endl;
+}
+
+
+void run_serial_benchmark(double** A, double** B, int n) {
+	auto start = chrono::high_resolution_clock::now();
+	double** result = serial_matrix_multiplication(A, B, n);
+	auto stop = chrono::high_resolution_clock::now();
+	auto duration = chrono::duration_cast<chrono::microseconds>(stop - start);
+	box("Serial", duration.count());
+}
+
+
+void run_parallel_1_benchmark(double** A, double** B, int n, int argc, char* argv[]) {
+	auto start = chrono::high_resolution_clock::now();
+	parallel_matrix_multiplication_1(A, B, n, argc, argv);
+	auto stop = chrono::high_resolution_clock::now();
+	auto duration = chrono::duration_cast<chrono::microseconds>(stop - start);
+	box("Parallel 1", duration.count());
+}
+
+
+void run_parallel_2_benchmark(double** A, double** B, int n, int argc, char* argv[]) {
+	auto start = chrono::high_resolution_clock::now();
+	parallel_matrix_multiplication_2(A, B, n, argc, argv);
+	auto stop = chrono::high_resolution_clock::now();
+	auto duration = chrono::duration_cast<chrono::microseconds>(stop - start);
+	box("Parallel 2", duration.count());
+}
+
+
 int main (int argc, char* argv[])
 {
-    int dim = 2;
+    int dim = 1024;
     double** A = createRandomMatrix(dim, dim);
     double** B = createRandomMatrix(dim, dim);
 
-    parallel_matrix_multiplication_2(A, B, dim, argc, argv);
+    //run_serial_benchmark(A, B, dim);
+    //run_parallel_1_benchmark(A, B, dim, argc, argv);
+    run_parallel_2_benchmark(A, B, dim, argc, argv);
+
+    //parallel_matrix_multiplication_2(A, B, dim, argc, argv);
 }
