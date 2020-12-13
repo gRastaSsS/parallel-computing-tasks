@@ -3,9 +3,12 @@
 #include "device_launch_parameters.h"
 #include <stdio.h>
 #include <iostream>
+#include <chrono>
 
-#define ROWS 16
-#define COLUMNS 3
+#define ROWS 1024
+#define COLUMNS 16
+
+using namespace std;
 
 
 int rand_int(int fMin, int fMax)
@@ -126,36 +129,58 @@ cudaError_t runClosenessCalculation(int *A, int *D)
 }
 
 
+void runBenchmark(int* A, int* D) {
+	auto start = chrono::high_resolution_clock::now();
+	cudaError_t cudaStatus = runClosenessCalculation(A, D);
+	auto stop = chrono::high_resolution_clock::now();
+	auto duration = chrono::duration_cast<chrono::microseconds>(stop - start);
+
+	if (cudaStatus != cudaSuccess) {
+		std::cout << "Failed!";
+		return;
+	}
+
+	cudaStatus = cudaDeviceReset();
+	if (cudaStatus != cudaSuccess) {
+		std::cout << "Failed!";
+		return;
+	}
+
+	cout << "Runtime: " << duration.count() << endl;
+}
+
+
 int main()
 {
-	int A[ROWS * COLUMNS];
-	int D[ROWS * ROWS];
+	//int A[ROWS * COLUMNS];
+	//int D[ROWS * ROWS];
+
+	int* A = new int[ROWS * COLUMNS];
+	int* D = new int[ROWS * ROWS];
 
 	for (int w = 0; w < ROWS; w++)
 		for (int h = 0; h < COLUMNS; h++)
 			A[w*COLUMNS + h] = rand_int(0, 10);
 
-	std::cout << "A" << std::endl;
-	printMatrix(A, ROWS, COLUMNS);
-	std::cout << std::endl;
+	//std::cout << "A" << std::endl;
+	//printMatrix(A, ROWS, COLUMNS);
+	//std::cout << std::endl;
 
-	cudaError_t cudaStatus = runClosenessCalculation(A, D);
+	runBenchmark(A, D);
 
-	if (cudaStatus != cudaSuccess) {
-		std::cout << "runClosenessCalculation failed!";
-		return 1;
-	}
+	//cudaError_t cudaStatus = runClosenessCalculation(A, D);
 
-	std::cout << "D" << std::endl;
-	printMatrix(D, ROWS, ROWS);
+	//if (cudaStatus != cudaSuccess) {
+	//	std::cout << "runClosenessCalculation failed!";
+	//	return 1;
+	//}
+
+	//std::cout << "D" << std::endl;
+	//printMatrix(D, ROWS, ROWS);
 
 	// cudaDeviceReset must be called before exiting in order for profiling and
 	// tracing tools such as Nsight and Visual Profiler to show complete traces.
-	cudaStatus = cudaDeviceReset();
-	if (cudaStatus != cudaSuccess) {
-		std::cout << "cudaDeviceReset failed!";
-		return 1;
-	}
+	
 
 	return 0;
 }
